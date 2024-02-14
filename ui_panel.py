@@ -1563,6 +1563,9 @@ class VIEW3D_PT_RigUI(bpy.types.Panel):
                             if "Fk" in name:
                                 name = name.replace("Fk", "FK")
 
+                            if name == "FK Limb Follow":
+                                name = "FK Global Orientation"
+
                             row = col.row()
                             ignore = ['IK_FK', 'IK_parent', 'pole_parent']
                             if not prop in ignore:
@@ -1585,6 +1588,7 @@ class VIEW3D_PT_RigUI(bpy.types.Panel):
                                 name = name.replace("Ik", "IK")
                             if "Fk" in name:
                                 name = name.replace("Fk", "FK")
+
 
                             row = col.row()
                             row.prop(bone, f'["{prop}"]', slider=True, text=name)
