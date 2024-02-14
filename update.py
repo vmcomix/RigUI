@@ -55,14 +55,21 @@ class RigUIAddonUpdate(bpy.types.Operator):
                 context.preferences.addons["RigUI"].preferences.update = "Update available"
             self.check_update = False
         elif self.update:
+
+            hash = None
             for file in Path(current_directory / "hash").iterdir():
                 hash = file.stem
                 break
 
-            old_hash = current_directory / "hash" / hash
+            if hash:
+                old_hash = current_directory / "hash" / hash
             new_hash = current_directory / "hash" /latest_commit_sha()
 
-            old_hash.rename(new_hash)
+            if hash:
+                old_hash.rename(new_hash)
+            else:
+                with open(current_directory / new_hash, 'w') as file:
+                    pass
             download_repository_files()
 
             context.preferences.addons["RigUI"].preferences.update = "Updated!"
