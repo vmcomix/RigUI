@@ -748,7 +748,7 @@ class RigifyGenericSnapBase:
         self.ctrl_bone_list = json.loads(self.ctrl_bones)
 
         try:
-            bpy.context.active_pose_bone["IK_FK"] = 0.0
+            bpy.context.active_pose_bone["IK_FK"] = 1.0
         except KeyError:
             pass
 
@@ -1047,7 +1047,7 @@ class RigifyLimbIk2FkBase:
         self.extra_ctrl_list = json.loads(self.extra_ctrls)
 
         try:
-            bpy.context.active_pose_bone["IK_FK"] = 1.0
+            bpy.context.active_pose_bone["IK_FK"] = 0.0
             # bpy.context.active_pose_bone.keyframe_insert(data_path='["IK_FK"]')
         except KeyError:
             pass
@@ -1463,7 +1463,7 @@ class VIEW3D_PT_RigUI(bpy.types.Panel):
                     row.scale_y = 1.5
 
                     # FK to IK snap
-                    props = row.operator('pose.rigify_generic_snap', text=f'FK->IK ({bone_name}.{bone.name[-1]})', icon='SNAP_ON')
+                    props = row.operator('pose.rigify_generic_snap', text=f'IK->FK ({bone_name}.{bone.name[-1]})', icon='SNAP_ON')
                     props.output_bones = json.dumps(bone["fk_bones"])
                     props.input_bones = json.dumps(bone["ik_bones"])
                     props.ctrl_bones = json.dumps(bone["ctrl_bones"])
@@ -1483,7 +1483,7 @@ class VIEW3D_PT_RigUI(bpy.types.Panel):
                     row = col.row(align=True)
                     row.scale_y = 1.5
 
-                    props = row.operator('pose.rigify_limb_ik2fk', text=f'IK->FK ({bone_name}.{bone.name[-1]})', icon='SNAP_ON')
+                    props = row.operator('pose.rigify_limb_ik2fk', text=f'FK->IK ({bone_name}.{bone.name[-1]})', icon='SNAP_ON')
                     props.prop_bone = bone.name
                     props.fk_bones = json.dumps(bone["fk_bones"])
                     props.ik_bones = json.dumps(bone["ik_bones"])
