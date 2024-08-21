@@ -84,6 +84,8 @@ class_list = {
     ui_panel.POSE_OT_rigify_leg_roll_ik2fk_bake,
     ui_panel.POSE_OT_rigify_switch_parent,
     ui_panel.POSE_OT_rigify_switch_parent_bake,
+    ui_panel.POSE_OT_rig_change_resolution,
+    ui_panel.POSE_OT_rig_set_mask,
     update.RigUIAddonUpdate,
     RigUIPreferences,
 }

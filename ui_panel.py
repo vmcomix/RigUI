@@ -1013,6 +1013,7 @@ def match_pole_target(view_layer, ik_first, ik_last, pole, match_bone_matrix, le
     if ang1 < ang2:
         set_pole(pv1)
 
+
 ##########
 ## Misc ##
 ##########
@@ -1356,12 +1357,77 @@ class POSE_OT_rigify_switch_parent_bake(RigifySwitchParentBase, RigifyBakeKeyfra
     def draw(self, context):
         self.layout.prop(self, 'selected', text='')
 
+class POSE_OT_rig_set_mask(bpy.types.Operator):
+    bl_idname = "pose.rig_set_mask"
+    bl_label = "Set Mask"
+    bl_description = "Enable/disable masks on mesh to hide different parts"
+
+    objects: StringProperty(name="Object")
+    mask: StringProperty(name="Mask")
+
+    def execute(self, context):
+        objects = json.loads(self.objects)
+        for ob in objects:
+            try:
+                if bpy.data.objects[ob].modifiers[self.mask].show_viewport == True:
+                    bpy.data.objects[ob].modifiers[self.mask].show_viewport = False
+                else:
+                    bpy.data.objects[ob].modifiers[self.mask].show_viewport = True
+            except KeyError:
+                self.report({'ERROR'}, "Objects not found")
+
+        return {"FINISHED"}
+
+class POSE_OT_rig_change_resolution(bpy.types.Operator):
+    bl_idname = "pose.rig_change_resolution"
+    bl_label = "Change Rig Resolution"
+    bl_description = "Adjust the resolution of the model"
+
+    resolution: bpy.props.StringProperty(name="Resolution")
+
+    def execute(self, context):
+        if self.resolution == "high":
+            coll_name = context.active_object.name.replace("RIG-", "")
+            try:
+                bpy.data.collections[coll_name+"-GEO-High"].hide_viewport = False
+                bpy.data.collections[coll_name+"-GEO-Medium"].hide_viewport = True
+                bpy.data.collections[coll_name+"-GEO-Low"].hide_viewport = True
+            except KeyError:
+                self.report({'ERROR'}, "Resolutions not available")
+
+        elif self.resolution == "medium":
+            coll_name = context.active_object.name.replace("RIG-", "")
+            try:
+                bpy.data.collections[coll_name+"-GEO-High"].hide_viewport = True
+                bpy.data.collections[coll_name+"-GEO-Medium"].hide_viewport = False
+                bpy.data.collections[coll_name+"-GEO-Low"].hide_viewport = True
+            except KeyError:
+                self.report({'ERROR'}, "Resolutions not available")
+
+        elif self.resolution == "low":
+            coll_name = context.active_object.name.replace("RIG-", "")
+            try:
+                bpy.data.collections[coll_name+"-GEO-High"].hide_viewport = True
+                bpy.data.collections[coll_name+"-GEO-Medium"].hide_viewport = True
+                bpy.data.collections[coll_name+"-GEO-Low"].hide_viewport = False
+            except KeyError:
+                self.report({'ERROR'}, "Resolutions not available")
+
+        elif self.resolution == "subdiv":
+            for ob in bpy.data.collections[context.active_object.name.replace("RIG-", "")+"-GEO"].all_objects:
+                if ob.modifiers.get("Subdivision"):
+                    if ob.modifiers["Subdivision"].levels == 0:
+                        ob.modifiers["Subdivision"].levels = 1
+                    else:
+                        ob.modifiers["Subdivision"].levels = 0
+        return {'FINISHED'}
+
 class VIEW3D_PT_RigUI(bpy.types.Panel):
     
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_idname = "VIEW3D_PT_TORigUI"
-    bl_category = 'Item'
+    bl_idname = "VIEW3D_PT_RigUI"
+    bl_category = 'Rig UI'
     bl_label = "Rig UI"
 
     @classmethod
@@ -1567,7 +1633,7 @@ class VIEW3D_PT_RigUI(bpy.types.Panel):
                                 name = "FK Global Orientation"
 
                             row = col.row()
-                            ignore = ['IK_FK', 'IK_parent', 'pole_parent']
+                            ignore = ['IK_FK', 'IK_parent', 'pole_parent', 'pole_vector']
                             if not prop in ignore:
                                 if type(bone[prop]) == bool:
                                     row.separator()
@@ -1593,7 +1659,7 @@ class VIEW3D_PT_RigUI(bpy.types.Panel):
                             row = col.row()
                             row.prop(bone, f'["{prop}"]', slider=True, text=name)
 
-            elif "God" in bone.name or "Root" in bone.name: # display specific buttons for god/root control
+            elif "God" in bone.name or "root" in bone.name: # display specific buttons for god/root control
                 layout.label(text="General Rig Settings", icon="SETTINGS")
 
                 box = layout.box()
