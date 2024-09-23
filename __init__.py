@@ -10,7 +10,7 @@ from bpy.utils import register_class, unregister_class
 bl_info = {
 	'name' : "Rig UI"
 	,'author' : "Vlad Mokhov"
-	,'version' : (1, 0, 0)
+	,'version' : (1, 1, 0)
 	,'blender' : (4, 0, 0)
 	,'description' : "Add on for displaying the UI panel on certain rigs."
 	,'location': "View 3D > Sidebar(N) > Item"
@@ -86,6 +86,8 @@ class_list = {
     ui_panel.POSE_OT_rigify_switch_parent_bake,
     ui_panel.POSE_OT_rig_change_resolution,
     ui_panel.POSE_OT_rig_set_mask,
+    # ui_panel.POSE_OT_rigify_finger_fk2ik,
+    # ui_panel.POSE_OT_rigify_finger_fk2ik_bake,
     update.RigUIAddonUpdate,
     RigUIPreferences,
 }
