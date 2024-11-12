@@ -1523,7 +1523,7 @@ class POSE_OT_rig_set_mask(bpy.types.Operator):
                 else:
                     bpy.data.objects[ob].modifiers[self.mask].show_viewport = True
             except KeyError:
-                self.report({'ERROR'}, "Objects not found")
+                self.report({'ERROR'}, f"Error on objects: {ob}")
 
         return {"FINISHED"}
 
