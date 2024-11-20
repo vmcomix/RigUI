@@ -29,7 +29,7 @@ if missing_modules == []:
     pass # all good in the hood
 else:
     for module in missing_modules:
-        file_url = f'https://raw.githubusercontent.com/vmcomix/RigUI/master/{module}'
+        file_url = f'https://raw.githubusercontent.com/vmcomix/RigUI/Thickety/{module}'
         destination = current_directory / module
         response = requests.get(file_url)
         if response.status_code == 200:
