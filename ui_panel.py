@@ -1571,6 +1571,105 @@ class POSE_OT_rig_change_resolution(bpy.types.Operator):
                         ob.modifiers["Subdivision"].levels = 0
         return {'FINISHED'}
 
+
+class POSE_OT_Toggle_Mocap_Skeleton(bpy.types.Operator):
+    bl_idname = "pose.toggle_mocap_skeleton"
+    bl_label = "Toggle Mocap Skeleton"
+    bl_description = "Toggles the control rig to follow mocap skeleton"
+
+    def execute(self, context):
+        mocap_skeleton = bpy.data.objects.get("MOCAP-" + context.active_object.name.split('-')[1]+"-Intermediary")
+        if not mocap_skeleton:
+            self.report({'ERROR'}, "Intermediary mocap skeleton missing")
+            return {'CANCELLED'}
+
+        if not mocap_skeleton.data.get('bone_map'):
+            self.report({'ERROR'}, "Bone Mapping Missing")
+            return {'CANCELLED'}
+
+        for target in mocap_skeleton.data['bone_map']:
+            const = context.active_object.pose.bones[target].constraints['COPY_MOCAP']
+            if const.influence == 1:
+                mocap_skeleton_enabled = False
+                const.influence = 0
+            else:
+                mocap_skeleton_enabled = True
+                const.influence = 1
+
+        if context.active_object.data.get("mocap_follow_state"):
+            if mocap_skeleton_enabled:
+                context.active_object.data['mocap_follow_state'] = 'following'
+            else:
+                context.active_object.data['mocap_follow_state'] = 'not_following'
+
+        # for side in [".L", ".R"]:
+        #     if context.active_object.pose.bones.get("leg_settings"+side):
+        #         if mocap_skeleton_enabled:
+        #             context.active_object.pose.bones["leg_settings"+side]['IK_FK'] = 1.0
+        #         else:
+        #             context.active_object.pose.bones["leg_settings"+side]['IK_FK'] = 0.0
+
+        return {'FINISHED'}
+
+
+class POSE_OT_Bake_ControlRig(bpy.types.Operator):
+    bl_idname = "pose.bake_control_rig"
+    bl_label = "Bake Control Rig"
+    bl_description = "Bakes the mocap data onto the control rig"
+
+    frame_start : bpy.props.IntProperty(default=1, name="Start Frame")
+    frame_end : bpy.props.IntProperty(default=250, name="End Frame")
+
+    def execute(self, context):
+        # try:
+        #     mocap_skeleton = bpy.data.objects["MOCAP-"+context.active_object.name.split('-')[1]]
+        # except KeyError:
+        #     self.report({'ERROR'}, "Could not find mocap skeleton")
+        #     return {"CANCELLED"}
+
+        # for crv in mocap_skeleton.animation_data.action.fcurves:
+        #     keys = []
+        #     for keyframe in crv.keyframe_points:
+        #         keys.append(keyframe.co[0])
+        #     max_frames = (max(keys))
+        #     break
+
+        bpy.ops.pose.select_all(action='DESELECT')
+
+        intermediary_skel = bpy.data.objects.get("MOCAP-"+context.active_object.name.split('-')[1]+"-Intermediary")
+        if intermediary_skel:
+            for bone in intermediary_skel.data['bone_map'].keys():
+                context.active_object.pose.bones[bone].bone.select=True
+        else:
+            self.report({'ERROR'}, "Could not find intermediary skeleton")
+            return {"CANCELLED"}
+
+        action = bpy.data.actions.new(name=context.active_object.name + "_ControlRigAction")
+
+        context.active_object.animation_data.action = action
+
+        bpy.ops.nla.bake(
+            frame_start=self.frame_start,
+            frame_end=self.frame_end,
+            step=1,
+            visual_keying=True,
+            use_current_action=True,
+            bake_types={'POSE'},
+            only_selected=True
+        )
+
+        if context.active_object.data.get("mocap_follow_state"):
+            if context.active_object.data["mocap_follow_state"] == "following":
+                bpy.ops.pose.toggle_mocap_skeleton()
+
+        for side in [".L", ".R"]:
+            if context.active_object.pose.bones.get("leg_settings"+side):
+                context.active_object.pose.bones["leg_settings"+side]['IK_FK'] = 1.0
+
+        return {'FINISHED'}
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+        
 class VIEW3D_PT_RigUI(bpy.types.Panel):
     
     bl_space_type = 'VIEW_3D'
@@ -1816,14 +1915,33 @@ class VIEW3D_PT_RigUI(bpy.types.Panel):
                 col.label(text="Set Rig Resolution (Viewport)")
                 row = col.row(align=True)
                 row.scale_y = 2
-                row.enabled = not bone.get("no_res_switching")
-                row.operator('pose.rig_change_resolution', text="Low Res", icon="MESH_PLANE").resolution = "low"
-                row.operator('pose.rig_change_resolution', text="Medium Res", icon="MOD_REMESH").resolution = "medium"
-                row.operator('pose.rig_change_resolution', text="High Res", icon="MESH_UVSPHERE").resolution = "high"
-                col.separator()
+                if not bone.get("no_res_switching"):
+                    row.operator('pose.rig_change_resolution', text="Low Res", icon="MESH_PLANE").resolution = "low"
+                    row.operator('pose.rig_change_resolution', text="Medium Res", icon="MOD_REMESH").resolution = "medium"
+                    row.operator('pose.rig_change_resolution', text="High Res", icon="MESH_UVSPHERE").resolution = "high"
+                    col.separator()
                 row = col.row(align=True)
                 row.scale_y = 1.5
                 row.operator('pose.rig_change_resolution', text="Toggle Subdivision", icon="MOD_SUBSURF").resolution = "subdiv"
+
+                # box = layout.box()
+                # row = box.row()
+                # row.label(text="Mocap Tools")
+                # col = box.column()
+                # group1 = col.row(align=True)
+                # group1.scale_y = 1.5
+                # group2 = group1.split(factor=0.75, align=True)
+                # if context.active_object.data.get("mocap_follow_state"):
+
+                #     text = "Follow Mocap"
+                #     if context.active_object.data['mocap_follow_state'] == 'following':
+                #         group2.operator('pose.toggle_mocap_skeleton', text=text, icon="LOCKED", depress=True)
+                #     elif context.active_object.data['mocap_follow_state'] == 'not_following':
+                #         group2.operator('pose.toggle_mocap_skeleton', text=text, icon="UNLOCKED", depress=False)
+                # else:
+                #     group2.operator('pose.toggle_mocap_skeleton', text=text, icon="ARMATURE_DATA", depress=False)
+
+                # group2.operator('pose.bake_control_rig', text="Bake", icon="DECORATE_KEYFRAME")
 
                 has_masks = False
                 for prop in bone.keys():
@@ -1846,6 +1964,7 @@ class VIEW3D_PT_RigUI(bpy.types.Panel):
                         op = row.operator("pose.rig_set_mask", text=name)
                         op.mask = prop
                         op.objects = json.dumps(bone[prop])
+
 
             elif bone.name == "head" and bone.get("parent_names"): # add parent space switch for head
                 box = layout.box()
@@ -1979,33 +2098,75 @@ class VIEW3D_PT_RigUI(bpy.types.Panel):
                 row = col.row()
                 row.prop(bone, '["finger_curve"]', slider=True, text="Finger Curve")
 
-            elif not list(bone.keys()) == []: # for all other bones, simply display the custom property if there is one
+            elif not list(bone.keys()) == [] : # for all other bones, simply display the custom property if there is one
                 ignore_props = []
                 for prop in bone.keys():
                     try:
                         if bone.id_properties_ui(prop).as_dict().get('description') == "ignore":
                             ignore_props.append(prop)
                     except TypeError:
-                        continue
+                        pass
+                    if prop == 'rigify_parameters':
+                        ignore_props.append(prop)
                     
-                if not len(ignore_props) == len(bone.keys()):
-                    layout.label(text="Bone Properties", icon="PROPERTIES")
+                if len(ignore_props) == len(bone.keys()):
+                    return
 
-                    for prop in sorted(bone.keys()):
-                        if isinstance(bone.get(prop), float) or \
-                        isinstance(bone.get(prop), int):
-                            col = layout.column(align=True)
-                            name = prop.replace("_", " ").title()
-                            
-                            if "Ik" in name:
-                                name = name.replace("Ik", "IK")
-                            if "Fk" in name:
-                                name = name.replace("Fk", "FK")
+                layout.label(text="Bone Properties", icon="PROPERTIES")
 
-                            # try:
-                            if not bone.id_properties_ui(prop).as_dict().get("description") == "ignore":
-                                row = col.row()
-                                row.prop(bone, f'["{prop}"]', slider=True, text=name)
-                            # except KeyError:
-                            #         row = col.row()
-                            #         row.prop(bone, f'["{prop}"]', slider=True, text=name)
+                sorted_int = [x for x in sorted(bone.keys()) if isinstance(bone.get(x), int)]
+                sorted_float = [x for x in sorted(bone.keys()) if isinstance(bone.get(x), float)]
+                sorted_props = sorted_int + sorted_float
+
+                for prop in sorted_props:
+                    col = layout.column(align=True)
+                    name = prop.replace("_", " ").title()
+                    
+                    if "Ik" in name:
+                        name = name.replace("Ik", "IK")
+                    if "Fk" in name:
+                        name = name.replace("Fk", "FK")
+
+                    if bone.id_properties_ui(prop).as_dict().get("description") == "ignore":
+                        return
+
+                    row = col.row()
+                    row.prop(bone, f'["{prop}"]', slider=True, text=name)
+
+class VIEW3D_PT_RigUIMocapTools(bpy.types.Panel):
+
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = 'Rig UI'
+    bl_parent_id = "VIEW3D_PT_RigUI"
+    bl_label = "Mocap Tools"
+    # bl_options = {'DEFAULT_CLOSED'}
+
+    def draw(self, context):
+        layout = self.layout
+        box = layout.box()
+        # row = box.row()
+        # row.label(text="Mocap Tools")
+        col = box.column()
+        group1 = col.row(align=True)
+        group1.scale_y = 1.5
+        group2 = group1.split(factor=0.75, align=True)
+        if context.active_object.data.get("mocap_follow_state"):
+
+            text = "Body Follow"
+            if context.active_object.data['mocap_follow_state'] == 'following':
+                group2.operator('pose.toggle_mocap_skeleton', text=text, icon="LOCKED", depress=True)
+            elif context.active_object.data['mocap_follow_state'] == 'not_following':
+                group2.operator('pose.toggle_mocap_skeleton', text=text, icon="UNLOCKED", depress=False)
+        else:
+            group2.operator('pose.toggle_mocap_skeleton', text=text, icon="ARMATURE_DATA", depress=False)
+
+        group2.operator('pose.bake_control_rig', text="Bake", icon="DECORATE_KEYFRAME")
+
+    @classmethod
+    def poll(cls, context):
+        if context.active_object:
+            if context.active_object.type == "ARMATURE" and context.active_object.data.get("rig_id") and context.mode == "POSE":
+                return isinstance(context.active_object.data.get("rig_id"), str) and context.active_object.data.get("use_rigui_addon") and context.active_object.data.get("mocap")
+        else:
+            return False

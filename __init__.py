@@ -86,6 +86,8 @@ class_list = {
     ui_panel.POSE_OT_rigify_switch_parent_bake,
     ui_panel.POSE_OT_rig_change_resolution,
     ui_panel.POSE_OT_rig_set_mask,
+    ui_panel.POSE_OT_Toggle_Mocap_Skeleton,
+    ui_panel.POSE_OT_Bake_ControlRig,
     # ui_panel.POSE_OT_rigify_finger_fk2ik,
     # ui_panel.POSE_OT_rigify_finger_fk2ik_bake,
     update.RigUIAddonUpdate,
@@ -96,6 +98,10 @@ def register():
     for cls in class_list:
         register_class(cls)
 
+    register_class(ui_panel.VIEW3D_PT_RigUIMocapTools)
+
 def unregister():
     for cls in class_list:
         unregister_class(cls)
+
+    unregister_class(ui_panel.VIEW3D_PT_RigUIMocapTools)
