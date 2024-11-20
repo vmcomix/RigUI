@@ -18,12 +18,12 @@ def download_repository_files():
             files.append(file.name)
 
     for file in files:
-        file_url = f'https://raw.githubusercontent.com/vmcomix/RigUI/master/{file}'
+        file_url = f'https://raw.githubusercontent.com/vmcomix/RigUI/Thickety/{file}'
         destination = Path(os.path.split(__file__)[0]) / file
         download_file(file_url, destination)
 
 def latest_commit_sha():
-    url = f'https://api.github.com/repos/vmcomix/RigUI/commits/master'
+    url = f'https://api.github.com/repos/vmcomix/RigUI/commits/Thickety'
     response = requests.get(url)
     if response.status_code == 200:
         commit_data = response.json()
