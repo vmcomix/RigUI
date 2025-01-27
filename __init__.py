@@ -4,7 +4,7 @@ import requests
 from pathlib import Path
 from importlib import reload
 from bpy.types import AddonPreferences
-from bpy.props import StringProperty
+from bpy.props import StringProperty, EnumProperty
 from bpy.utils import register_class, unregister_class
 
 bl_info = {
@@ -44,6 +44,7 @@ else:
 reload_list = [
                 'ui_panel',
                 'update',
+                'image_switcher'
               ]
 
 # This makes sure to reload the modules when running "Reload Scripts"
@@ -54,11 +55,20 @@ for module in reload_list:
         from . import ui_panel
         from . import update
 
+from .image_switcher import enum_items_callback, change_enum
+
 class RigUIPreferences(AddonPreferences):
 
     bl_idname = __name__
 
     update: StringProperty(default="")
+
+    facial_feature: EnumProperty(
+        items = enum_items_callback,
+        name = "Selected Expression",
+        description="Choose an expression from the list",
+        update=change_enum,
+    )
 
     def draw(self, context):
         layout = self.layout
@@ -86,22 +96,23 @@ class_list = {
     ui_panel.POSE_OT_rigify_switch_parent_bake,
     ui_panel.POSE_OT_rig_change_resolution,
     ui_panel.POSE_OT_rig_set_mask,
-    ui_panel.POSE_OT_Toggle_Mocap_Skeleton,
+    # ui_panel.POSE_OT_Toggle_Mocap_Skeleton,
     ui_panel.POSE_OT_Bake_ControlRig,
     # ui_panel.POSE_OT_rigify_finger_fk2ik,
     # ui_panel.POSE_OT_rigify_finger_fk2ik_bake,
     update.RigUIAddonUpdate,
     RigUIPreferences,
+    # image_switcher.RigUI_OT_GenerateExpressionThumbnails,
 }
 
 def register():
     for cls in class_list:
         register_class(cls)
 
-    register_class(ui_panel.VIEW3D_PT_RigUIMocapTools)
+    # register_class(ui_panel.VIEW3D_PT_RigUIMocapTools)
 
 def unregister():
     for cls in class_list:
         unregister_class(cls)
 
-    unregister_class(ui_panel.VIEW3D_PT_RigUIMocapTools)
+    # unregister_class(ui_panel.VIEW3D_PT_RigUIMocapTools)
