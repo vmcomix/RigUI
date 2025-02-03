@@ -1947,27 +1947,37 @@ class VIEW3D_PT_RigUI(bpy.types.Panel):
                         op.objects = json.dumps(bone[prop])
 
 
-            elif bone.name == "head" and bone.get("parent_names"): # add parent space switch for head
-                box = layout.box()
-                col = box.column()
-                col.label(text="Head Parent Space (Rotational)")
-                group1 = col.row(align=True)
-                group2 = group1.split(factor=0.75, align=True)
-                props = group2.operator('pose.rigify_switch_parent', text='Head Parent', icon='DOWNARROW_HLT')
-                props.bone = bone.name
-                props.prop_bone = bone.name
-                props.prop_id = 'parent_space'
-                props.parent_names = json.dumps(bone["parent_names"])
-                props.locks = (False, True, True)
+            elif bone.name == "head": # add parent space switch for head
+                if bone.get("parent_names"):
+                    box = layout.box()
+                    col = box.column()
+                    col.label(text="Head Parent Space (Rotational)")
+                    group1 = col.row(align=True)
+                    group2 = group1.split(factor=0.75, align=True)
+                    props = group2.operator('pose.rigify_switch_parent', text='Head Parent', icon='DOWNARROW_HLT')
+                    props.bone = bone.name
+                    props.prop_bone = bone.name
+                    props.prop_id = 'parent_space'
+                    props.parent_names = json.dumps(bone["parent_names"])
+                    props.locks = (False, True, True)
 
-                group2.prop(bone, '["parent_space"]', text='')
+                    group2.prop(bone, '["parent_space"]', text='')
 
-                props = group1.operator('pose.rigify_switch_parent_bake', text='', icon='ACTION_TWEAK')
-                props.bone = bone.name
-                props.prop_bone = bone.name
-                props.prop_id = 'parent_space'
-                props.parent_names = json.dumps(bone["parent_names"])
-                props.locks = (False, True, True)
+                    props = group1.operator('pose.rigify_switch_parent_bake', text='', icon='ACTION_TWEAK')
+                    props.bone = bone.name
+                    props.prop_bone = bone.name
+                    props.prop_id = 'parent_space'
+                    props.parent_names = json.dumps(bone["parent_names"])
+                    props.locks = (False, True, True)
+
+                if context.active_object.pose.bones.get("MCH-facetrack_cam"):
+                    if not bone.get("parent_names"):
+                        box = layout.box()
+                        col = box.column()
+                    row = col.row()
+                    row.label(text="Select camera to orient facial features towards")
+                    row = col.row()
+                    row.prop(context.active_object.pose.bones['MCH-facetrack_cam'].constraints['Track To'], "target", text="Camera")
 
             elif bone.get("parent_names") or bone.get("parent_names") == 0 and bone.get("parent_space"): # generic bone with arbitrary parent spaces
                 box = layout.box()
@@ -2106,6 +2116,10 @@ class VIEW3D_PT_RigUI(bpy.types.Panel):
 
                 row = box.row()
                 row.prop(bone, '["image_index"]', text="Index", slider=True)
+                for prop in bone.keys():
+                    if not prop == '2D_face' and not prop == 'image_index':
+                        row = box.row()
+                        row.prop(bone, f'["{prop}"]', text=prop.capitalize(), slider=True)
 
             elif not list(bone.keys()) == [] : # for all other bones, simply display the custom property if there is one
                 ignore_props = []
