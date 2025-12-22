@@ -1877,8 +1877,8 @@ class VIEW3D_PT_RigUI(bpy.types.Panel):
                             if "Fk" in name:
                                 name = name.replace("Fk", "FK")
 
-                            if name == "FK Limb Follow":
-                                name = "FK Global Orientation"
+                            # if name == "FK Limb Follow":
+                            #     name = "FK Global Orientation"
 
                             row = col.row()
                             ignore = ['IK_FK', 'IK_parent', 'pole_parent', 'pole_vector']
@@ -1978,6 +1978,12 @@ class VIEW3D_PT_RigUI(bpy.types.Panel):
                     row.label(text="Select camera to orient facial features towards")
                     row = col.row()
                     row.prop(context.active_object.pose.bones['MCH-facetrack_cam'].constraints['Track To'], "target", text="Camera")
+                
+                if len(bone.keys()) > 0:
+                    layout.separator()
+                    for prop in bone.keys():
+                        row = layout.row()
+                        row.prop(bone, f'["{prop}"]', slider=True, text=prop.replace("_", " ").capitalize())
 
             elif bone.get("parent_names") or bone.get("parent_names") == 0 and bone.get("parent_space"): # generic bone with arbitrary parent spaces
                 box = layout.box()
